@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 const User = require('../models/user');
 const jwt = require('jsonwebtoken');
+const withAuth = require('../middleware/auth');
 require('dotenv').config();
 const secret = process.env.JWT_TOKEN
 
@@ -39,5 +40,42 @@ router.post('/login', async (req, res)=>{
   }
 })
 
+router.put('/', withAuth, async (req, res) =>{
+  const {name, email} = req.body;
+
+  try {
+    let user = await User.findOneAndUpdate(
+      {_id: req.user._id},
+      {$set:{name: name, email: email}},
+      {upsert:true, 'new': true}
+    )
+    res.json(user)
+  } catch (error) {
+    res.status(401).json({error: error})
+  }
+})
+
+router.put('/password', withAuth , async (req, res) => {
+  const {password} = req.body;
+
+  try {
+    let user = await User.findById({_id:req.user._id})
+    user.password = password
+    user.save()
+    res.json(user) 
+  } catch (error) {
+    res.status(401).json({error: error})
+  }
+})
+
+router.delete('/', withAuth, async (req, res) =>{
+  try {
+    let user = await User.findOne({_id: req.user._id})
+    await user.delete()
+    res.json({message: 'Usuário excluío com sucesso'}).status(201);
+  } catch (error) {
+    res.status(500).json({error: error})
+  }
+})
 
 module.exports = router;

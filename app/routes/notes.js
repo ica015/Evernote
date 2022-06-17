@@ -6,9 +6,8 @@ const note = require('../models/note');
 
 router.post('/', withAuth, async (req, res) =>{
     const {title, body} = req.body;
-    
+    let note = new Note({title: title, body: body, author: req.user._id});
     try {
-        let note = new Note({title: title, body: body, author: req.user._id});
         await note.save();
         res.status(200).json(note)
     } catch (error) {
@@ -44,7 +43,8 @@ router.put('/:id', withAuth, async(req, res)=>{
     try {
         let note = await Note.findById(id)
         if (isOwner(req.user, note)){
-            let note = await Note.findOneAndUpdate(id, 
+            let note = await Note.findOneAndUpdate(
+                {_id: id}, 
                 { $set:{ title: title, body: body }},
                 { upsert: true, 'new': true } //faz com que a atualização seja apresentada no front-end
             );
